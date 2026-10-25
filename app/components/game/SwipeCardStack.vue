@@ -45,9 +45,10 @@
             :key="current.id"
             class="stack-card panel claim-card absolute inset-x-0 top-0 flex cursor-grab flex-col items-center justify-center px-7 py-9 text-center active:cursor-grabbing md:px-12 md:py-12"
             :class="{
-              'pointer-events-none opacity-55': disabled,
+              'pointer-events-none opacity-55': locked,
               'claim-card--drag-false': hintLeft > 0.35,
               'claim-card--drag-true': hintRight > 0.35,
+              'claim-card--exit': exiting,
             }"
             :style="cardStyle"
           >
@@ -73,7 +74,7 @@
         <button
           type="button"
           class="answer-pad answer-pad--false"
-          :disabled="disabled || !current"
+          :disabled="locked || !current"
           aria-keyshortcuts="ArrowLeft"
           @click="answer(false)"
         >
@@ -86,7 +87,7 @@
         <button
           type="button"
           class="answer-pad answer-pad--true"
-          :disabled="disabled || !current"
+          :disabled="locked || !current"
           aria-keyshortcuts="ArrowRight"
           @click="answer(true)"
         >
@@ -107,6 +108,9 @@
 <script setup lang="ts">
 import { Check, CheckCircle2, Layers, X, XCircle } from "lucide-vue-next";
 
+const FLY_MS = 280;
+const THRESHOLD = 80;
+
 const props = defineProps<{
   questions: { id: string; text: string; order: number }[];
   index: number;
@@ -119,11 +123,14 @@ const emit = defineEmits<{
 
 const dragX = ref(0);
 const dragging = ref(false);
+const exiting = ref(false);
 
 let startX = 0;
 let pointerId: number | null = null;
 
 const current = computed(() => props.questions[props.index] || null);
+const locked = computed(() => props.disabled || exiting.value);
+
 const stackLayers = computed(() =>
   [2, 1].map((layer) => ({
     key: `back-${layer}`,
@@ -140,15 +147,28 @@ const rotation = computed(() => dragX.value * 0.04);
 const hintRight = computed(() => Math.min(1, Math.max(0, dragX.value / 70)));
 const hintLeft = computed(() => Math.min(1, Math.max(0, -dragX.value / 70)));
 
+const reduceMotion = ref(false);
+onMounted(() => {
+  reduceMotion.value = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+});
+
 const cardStyle = computed(() => ({
   position: "absolute" as const,
   zIndex: "10",
   transform: `translateX(${dragX.value}px) rotate(${rotation.value}deg)`,
-  transition: dragging.value ? "none" : "transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)",
+  opacity:
+    exiting.value && Math.abs(dragX.value) > 120
+      ? Math.max(0.15, 1 - Math.abs(dragX.value) / 600)
+      : 1,
+  transition: dragging.value
+    ? "none"
+    : exiting.value
+      ? `transform ${FLY_MS}ms cubic-bezier(0.22, 1, 0.36, 1), opacity ${FLY_MS}ms ease`
+      : "transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)",
 }));
 
 function onPointerDown(e: PointerEvent) {
-  if (props.disabled || !current.value) {
+  if (locked.value || !current.value) {
     return;
   }
   dragging.value = true;
@@ -171,30 +191,42 @@ function onPointerUp(e: PointerEvent) {
   dragging.value = false;
   pointerId = null;
   const dx = dragX.value;
-  dragX.value = 0;
-  if (Math.abs(dx) < 80) {
+  if (Math.abs(dx) < THRESHOLD) {
+    dragX.value = 0;
     return;
   }
-  answer(dx > 0);
+  void flyAndEmit(dx > 0);
 }
 
-function answer(value: boolean) {
-  if (props.disabled || !current.value) {
+function flyDistance() {
+  if (!import.meta.client) {
+    return 480;
+  }
+  return Math.max(window.innerWidth * 0.9, 420);
+}
+
+async function flyAndEmit(value: boolean) {
+  if (locked.value || !current.value) {
     return;
+  }
+  exiting.value = true;
+  dragging.value = false;
+  const dir = value ? 1 : -1;
+  dragX.value = dir * flyDistance();
+  if (!reduceMotion.value) {
+    await new Promise<void>((resolve) => setTimeout(resolve, FLY_MS));
   }
   emit("answer", value);
 }
 
+function answer(value: boolean) {
+  void flyAndEmit(value);
+}
+
 function onKey(e: KeyboardEvent) {
-  if (props.disabled) {
-    return;
-  }
-  if (e.key === "ArrowRight") {
-    answer(true);
-  }
-  if (e.key === "ArrowLeft") {
-    answer(false);
-  }
+  if (locked.value) return;
+  if (e.key === "ArrowRight") answer(true);
+  if (e.key === "ArrowLeft") answer(false);
 }
 
 onMounted(() => window.addEventListener("keydown", onKey));
@@ -205,6 +237,7 @@ watch(
   () => {
     dragX.value = 0;
     dragging.value = false;
+    exiting.value = false;
   },
 );
 </script>
@@ -236,16 +269,19 @@ watch(
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
+  will-change: transform;
 }
 
-.claim-card--drag-false {
+.claim-card--drag-false,
+.claim-card--exit.claim-card--drag-false {
   border-color: color-mix(in srgb, var(--false) 55%, transparent);
   box-shadow:
     var(--shadow-lg),
     0 0 0 4px var(--false-soft);
 }
 
-.claim-card--drag-true {
+.claim-card--drag-true,
+.claim-card--exit.claim-card--drag-true {
   border-color: color-mix(in srgb, var(--true) 55%, transparent);
   box-shadow:
     var(--shadow-lg),
@@ -368,26 +404,28 @@ watch(
   }
 }
 
-.card-swap-enter-active,
-.card-swap-leave-active {
+/* leave is instant — exit is the fly-off; enter brings the next card */
+.card-swap-enter-active {
   transition:
-    opacity 0.2s ease,
-    transform 0.22s ease;
+    opacity 0.22s ease,
+    transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.card-swap-leave-active {
+  transition: none;
 }
 
 .card-swap-enter-from {
   opacity: 0;
-  transform: translateY(12px) scale(0.98);
+  transform: translateY(14px) scale(0.97);
 }
 
 .card-swap-leave-to {
   opacity: 0;
-  transform: translateY(-8px) scale(0.98);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .card-swap-enter-active,
-  .card-swap-leave-active,
   .reveal,
   .answer-pad,
   .claim-card {
