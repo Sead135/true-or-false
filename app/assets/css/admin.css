@@ -1,0 +1,29 @@
+.admin-shell a,
+.admin-shell button:not(:disabled),
+.admin-shell [role="button"],
+.admin-shell [role="menuitem"],
+.admin-shell [role="link"],
+.admin-shell summary,
+.admin-shell label[for],
+.admin-shell .admin-clickable,
+.admin-shell tbody tr {
+  cursor: pointer;
+}
+
+.admin-shell button:disabled,
+.admin-shell [aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+.admin-shell form {
+  width: 100%;
+}
+
+.admin-shell :where(.admin-form) :where(input, textarea, select, [data-slot="control"]) {
+  width: 100%;
+}
+
+.admin-shell :where([data-slot="root"]):has(> input),
+.admin-shell :where([data-slot="root"]):has(> textarea) {
+  width: 100%;
+}
