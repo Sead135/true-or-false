@@ -48,7 +48,27 @@ export default defineNuxtConfig({
             "(function(){try{var t=localStorage.getItem('tf-theme');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');document.documentElement.style.colorScheme='dark'}else{document.documentElement.style.colorScheme='light'}}catch(e){}})()",
           tagPosition: "head",
         },
+        ...(process.env.NODE_ENV === "production"
+          ? [
+              {
+                key: "yandex-metrika",
+                innerHTML: `(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();for(var j=0;j<document.scripts.length;j++){if(document.scripts[j].src===r){return}}k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,"script","https://mc.yandex.ru/metrika/tag.js?id=113810417","ym");ym(113810417,"init",{ssr:true,webvisor:true,clickmap:true,ecommerce:"dataLayer",referrer:document.referrer,url:location.href,accurateTrackBounce:true,trackLinks:true});`,
+                tagPosition: "bodyClose" as const,
+              },
+            ]
+          : []),
       ],
+      noscript:
+        process.env.NODE_ENV === "production"
+          ? [
+              {
+                key: "yandex-metrika-noscript",
+                innerHTML:
+                  '<div><img src="https://mc.yandex.ru/watch/113810417" style="position:absolute;left:-9999px;" alt="" /></div>',
+                tagPosition: "bodyClose" as const,
+              },
+            ]
+          : [],
     },
   },
   runtimeConfig: {
