@@ -34,107 +34,101 @@
 
     <ol v-else class="grid list-none gap-2.5 p-0 sm:gap-3">
       <li v-for="level in displayLevels" :key="level.id">
-        <LevelCard
-          :id="level.id"
-          :title="level.title"
-          :order="level.order"
-          :unlocked="level.unlocked"
-          :stars="level.stars"
-        />
+        <LevelCard :id="level.id" :title="level.title" :order="level.order" :unlocked="level.unlocked"
+          :stars="level.stars" />
       </li>
     </ol>
   </main>
 </template>
 
 <script setup lang="ts">
-import { Inbox } from "lucide-vue-next";
-import type { ProgressRow } from "../../../lib/game/mergeProgress";
-import { isLevelUnlocked } from "../../../lib/game/unlock";
+import { Inbox } from "lucide-vue-next"
+import type { ProgressRow } from "../../../lib/game/mergeProgress"
+import { isLevelUnlocked } from "../../../lib/game/unlock"
 
 usePageSeo({
   title: "Уровни",
   description: "Список уровней игры «правда или ложь». Открывай по порядку и улучшай звёзды.",
   path: "/levels",
-});
+})
 
 type ApiLevel = {
-  id: string;
-  title: string;
-  order: number;
-  stars?: number;
-  unlocked?: boolean;
-};
+  id: string
+  title: string
+  order: number
+  stars?: number
+  unlocked?: boolean
+}
 
-const { session, refresh } = useSession();
-const guest = useGuestProgress();
-await refresh({ force: import.meta.client && !session.value?.user });
+const { session, refresh } = useSession()
+const guest = useGuestProgress()
+await refresh({ force: import.meta.client && !session.value?.user })
 
-const {
-  data,
-  error,
-  refresh: refreshLevels,
-} = await useCachedAsyncData(
+const { data, error, refresh: refreshLevels } = await useCachedAsyncData(
   () => `levels-${session.value?.user?.id || "guest"}`,
   () => $fetch<ApiLevel[]>("/api/levels"),
-  { watch: [() => session.value?.user?.id] },
-);
+  {
+    lazy: import.meta.client,
+    watch: [() => session.value?.user?.id],
+  },
+)
 
-const guestProgress = ref<ProgressRow[]>([]);
-const progressReady = ref(!!session.value?.user);
+const guestProgress = ref<ProgressRow[]>([])
+const progressReady = ref(!!session.value?.user)
 
 if (!session.value?.user) {
   if (import.meta.client) {
-    guestProgress.value = await guest.list();
-    progressReady.value = true;
+    guestProgress.value = await guest.list()
+    progressReady.value = true
   } else {
     onMounted(async () => {
-      guestProgress.value = await guest.list();
-      progressReady.value = true;
-    });
+      guestProgress.value = await guest.list()
+      progressReady.value = true
+    })
   }
 }
 
-const listReady = computed(() => progressReady.value && Array.isArray(data.value));
+const listReady = computed(() => progressReady.value && Array.isArray(data.value))
 
 watch(
   [session, data],
   () => {
     if (!import.meta.client || !session.value?.user) {
-      return;
+      return
     }
-    const levels = data.value;
+    const levels = data.value
     if (!levels?.length) {
-      return;
+      return
     }
     if ("stars" in levels[0]! || "unlocked" in levels[0]!) {
-      return;
+      return
     }
-    void refreshLevels();
+    void refreshLevels()
   },
   { immediate: true },
-);
+)
 
 const displayLevels = computed(() => {
-  const levels = data.value || [];
+  const levels = data.value || []
   if (session.value?.user) {
     return levels.map((l) => ({
       ...l,
       unlocked: l.unlocked ?? l.order === 1,
       stars: l.stars ?? 0,
-    }));
+    }))
   }
-  const byLevel = new Map(guestProgress.value.map((p) => [p.levelId, p]));
-  const progressByOrder = new Map<number, { stars: number }>();
+  const byLevel = new Map(guestProgress.value.map((p) => [p.levelId, p]))
+  const progressByOrder = new Map<number, { stars: number }>()
   for (const l of levels) {
-    const p = byLevel.get(l.id);
-    if (p) progressByOrder.set(l.order, { stars: p.stars });
+    const p = byLevel.get(l.id)
+    if (p) progressByOrder.set(l.order, { stars: p.stars })
   }
   return levels.map((l) => ({
     ...l,
     unlocked: isLevelUnlocked(l.order, progressByOrder),
     stars: byLevel.get(l.id)?.stars ?? 0,
-  }));
-});
+  }))
+})
 </script>
 
 <style scoped>
@@ -170,6 +164,7 @@ const displayLevels = computed(() => {
 }
 
 @keyframes level-skel-pulse {
+
   0%,
   100% {
     opacity: 0.55;
@@ -181,6 +176,7 @@ const displayLevels = computed(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .level-skel__num,
   .level-skel__line,
   .level-skel__stars {
