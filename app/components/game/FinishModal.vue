@@ -28,7 +28,7 @@
             <p class="muted mt-3 text-[15px] leading-relaxed">
               Не удалось сохранить результат. Попробуйте ещё раз.
             </p>
-            <button class="btn btn-primary mt-6 w-full" type="button" @click="$emit('retry')">
+            <button class="btn btn-ghost mt-6 w-full" type="button" @click="$emit('retry')">
               Повторить
             </button>
           </template>
@@ -49,14 +49,21 @@
               <StarsDisplay :stars="stars" />
             </div>
             <nav class="mt-7 flex flex-col gap-3" aria-label="После результата">
-              <button class="btn btn-primary w-full" type="button" @click="$emit('replay')">
-                <AppIcon :icon="RotateCcw" size="sm" />
-                Ещё раз
-              </button>
-              <NuxtLink to="/levels" class="btn btn-ghost w-full">
-                <AppIcon :icon="LayoutList" size="sm" />
-                К уровням
+              <NuxtLink
+                v-if="showNext"
+                :to="`/levels/${nextLevelId}/play`"
+                class="btn btn-primary w-full"
+              >
+                Следующий уровень
+                <AppIcon :icon="ArrowRight" size="sm" />
               </NuxtLink>
+              <div class="grid grid-cols-2 gap-3">
+                <button class="btn btn-ghost w-full" type="button" @click="$emit('replay')">
+                  <AppIcon :icon="RotateCcw" size="sm" />
+                  Повторить
+                </button>
+                <NuxtLink to="/levels" class="btn btn-ghost w-full">Уровни</NuxtLink>
+              </div>
             </nav>
           </template>
         </div>
@@ -67,8 +74,8 @@
 
 <script setup lang="ts">
 import {
+  ArrowRight,
   Frown,
-  LayoutList,
   LoaderCircle,
   PartyPopper,
   RotateCcw,
@@ -84,9 +91,14 @@ const props = defineProps<{
   correct: number;
   total: number;
   stars: number;
+  nextLevelId?: string | null;
 }>();
 
 defineEmits<{ retry: []; replay: [] }>();
+
+const showNext = computed(
+  () => props.stars >= 1 && !!props.nextLevelId,
+);
 
 const accuracy = computed(() =>
   props.total > 0 ? Math.round((props.correct / props.total) * 100) : 0,
