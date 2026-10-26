@@ -1,22 +1,22 @@
-import { betterAuth } from 'better-auth';
-import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { eq } from 'drizzle-orm';
-import { createDb, normalizeDatabaseUrl, schema } from './db';
-import { levelAttempts, userAchievements, userProgress, userStats } from './db/schema';
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { eq } from "drizzle-orm";
+import { createDb, normalizeDatabaseUrl, schema } from "./db";
+import { levelAttempts, userAchievements, userProgress, userStats } from "./db/schema";
 
 function normalizeBaseURL(url: string) {
   return url
     .trim()
-    .replace(/^["']|["']$/g, '')
-    .replace(/\/$/, '');
+    .replace(/^["']|["']$/g, "")
+    .replace(/\/$/, "");
 }
 
 function originFromHost(host: string) {
-  const h = host.trim().replace(/\/$/, '');
+  const h = host.trim().replace(/\/$/, "");
   if (!h) {
     return null;
   }
-  if (h.includes('://')) {
+  if (h.includes("://")) {
     return normalizeBaseURL(h);
   }
   return `https://${h}`;
@@ -42,22 +42,20 @@ export function createAuth(env: {
 
   return betterAuth({
     database: drizzleAdapter(db, {
-      provider: 'pg',
-      schema
+      provider: "pg",
+      schema,
     }),
     secret: env.secret,
     baseURL,
     advanced: {
-      trustedProxyHeaders: true
+      trustedProxyHeaders: true,
     },
     trustedOrigins: async (request) => {
       const origins = new Set(trusted);
-      const originHeader = request?.headers.get('origin');
+      const originHeader = request?.headers.get("origin");
       const forwarded =
-        request?.headers.get('x-forwarded-host') ||
-        request?.headers.get('host') ||
-        '';
-      const requestHost = forwarded.split(',')[0]?.trim().split(':')[0] || '';
+        request?.headers.get("x-forwarded-host") || request?.headers.get("host") || "";
+      const requestHost = forwarded.split(",")[0]?.trim().split(":")[0] || "";
 
       if (originHeader && requestHost) {
         try {
@@ -79,18 +77,18 @@ export function createAuth(env: {
       window: 60,
       max: 100,
       customRules: {
-        '/sign-in/email': { window: 60 * 15, max: 10 },
-        '/sign-up/email': { window: 60 * 15, max: 10 }
-      }
+        "/sign-in/email": { window: 60 * 15, max: 10 },
+        "/sign-up/email": { window: 60 * 15, max: 10 },
+      },
     },
     user: {
       additionalFields: {
         role: {
-          type: 'string',
-          defaultValue: 'user',
+          type: "string",
+          defaultValue: "user",
           required: false,
-          input: false
-        }
+          input: false,
+        },
       },
       deleteUser: {
         enabled: true,
@@ -99,21 +97,21 @@ export function createAuth(env: {
           await db.delete(userProgress).where(eq(userProgress.userId, user.id));
           await db.delete(userStats).where(eq(userStats.userId, user.id));
           await db.delete(userAchievements).where(eq(userAchievements.userId, user.id));
-        }
-      }
+        },
+      },
     },
     databaseHooks: {
       user: {
         create: {
           async before(user) {
             if (user.email === env.adminEmail) {
-              return { data: { ...user, role: 'owner' } };
+              return { data: { ...user, role: "owner" } };
             }
             return { data: user };
-          }
-        }
-      }
-    }
+          },
+        },
+      },
+    },
   });
 }
 

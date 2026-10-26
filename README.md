@@ -33,13 +33,13 @@ bun run dev
 
 ## Переменные окружения
 
-| Переменная                       | Зачем                               |
-| -------------------------------- | ----------------------------------- |
-| `DATABASE_URL`                   | Postgres (Neon)                     |
-| `BETTER_AUTH_SECRET`             | Секрет сессий Better Auth           |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Первый админ (`seed:admin`)         |
+| Переменная                       | Зачем                                      |
+| -------------------------------- | ------------------------------------------ |
+| `DATABASE_URL`                   | Postgres (Neon)                            |
+| `BETTER_AUTH_SECRET`             | Секрет сессий Better Auth                  |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Первый админ (`seed:admin`)                |
 | `NUXT_PUBLIC_APP_URL`            | URL сайта как в браузере (без `/` в конце) |
-| `BETTER_AUTH_TRUSTED_ORIGINS`    | Опционально: доп. origins через запятую |
+| `BETTER_AUTH_TRUSTED_ORIGINS`    | Опционально: доп. origins через запятую    |
 
 ## Скрипты
 

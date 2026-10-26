@@ -1,7 +1,11 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
-import { mergeProgress, type ProgressRow } from "../../../app/utils/mergeProgress";
-import { userProgress } from "../../../lib/db/schema";
+import { levels, userProgress } from "../../../lib/db/schema";
+import {
+  mergeProgress,
+  sanitizeProgressRow,
+  type ProgressRow,
+} from "../../../lib/game/mergeProgress";
 import { getDb } from "../../utils/db";
 import { requireUser } from "../../utils/requireUser";
 
@@ -36,11 +40,22 @@ export default defineEventHandler(async (event) => {
     updatedAt: r.updatedAt?.toISOString() ?? null,
   }));
 
-  const merged = mergeProgress(parsed.data.progress, remote);
-
   if (!parsed.data.progress.length) {
     return { progress: remote };
   }
+
+  const levelIds = [...new Set(parsed.data.progress.map((p) => p.levelId))];
+  const existingLevels = await db
+    .select({ id: levels.id })
+    .from(levels)
+    .where(inArray(levels.id, levelIds));
+  const known = new Set(existingLevels.map((l) => l.id));
+
+  const local = parsed.data.progress
+    .filter((row) => known.has(row.levelId))
+    .map(sanitizeProgressRow);
+
+  const merged = mergeProgress(local, remote);
 
   const now = new Date();
   for (const row of merged) {

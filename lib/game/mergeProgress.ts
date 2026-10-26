@@ -1,3 +1,5 @@
+import { computeStars } from "./stars";
+
 export type ProgressRow = {
   levelId: string;
   stars: number;
@@ -6,6 +8,14 @@ export type ProgressRow = {
   completedAt: string | null;
   updatedAt?: string | null;
 };
+
+export function sanitizeProgressRow(row: ProgressRow): ProgressRow {
+  const bestTotal = Math.max(0, Math.floor(row.bestTotal));
+  const bestCorrect = Math.min(Math.max(0, Math.floor(row.bestCorrect)), bestTotal);
+  const earned = computeStars(bestCorrect, bestTotal);
+  const stars = Math.min(3, Math.max(0, Math.floor(row.stars)), earned);
+  return { ...row, bestTotal, bestCorrect, stars };
+}
 
 function better(a: ProgressRow, b: ProgressRow): ProgressRow {
   if (a.stars !== b.stars) {

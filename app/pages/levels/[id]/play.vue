@@ -8,7 +8,7 @@
       <div class="min-w-0 flex-1">
         <div class="flex items-center justify-between gap-2 text-xs font-semibold tabular-nums">
           <span class="muted truncate">{{ level?.title || "Уровень" }}</span>
-          <span>{{ index + 1 }} / {{ questions.length || "…" }}</span>
+          <span>{{ play.index + 1 }} / {{ questions.length || "…" }}</span>
         </div>
         <div
           class="bar mt-1.5"
@@ -16,7 +16,7 @@
           :aria-valuenow="progressPct"
           aria-valuemin="0"
           aria-valuemax="100"
-          :aria-label="`Вопрос ${index + 1} из ${questions.length || 0}`"
+          :aria-label="`Вопрос ${play.index + 1} из ${questions.length || 0}`"
         >
           <div class="bar-fill" :style="{ width: `${progressPct}%` }" />
         </div>
@@ -35,20 +35,24 @@
       v-else
       class="min-h-0 flex-1"
       :questions="questions"
-      :index="index"
-      :disabled="busy"
+      :index="play.index"
+      :disabled="play.busy"
       @answer="onAnswer"
     />
 
-    <ExplanationModal :open="modalOpen" :explanation="explanation" @continue="afterExplanation" />
+    <ExplanationModal
+      :open="explanation.open"
+      :explanation="explanation.text"
+      @continue="afterExplanation"
+    />
     <FinishModal
-      :open="finishOpen"
-      :scoring="finishScoring"
-      :error="finishError"
-      :correct="finishCorrect"
-      :total="finishTotal"
-      :stars="finishStars"
-      @retry="finish"
+      :open="finish.open"
+      :scoring="finish.scoring"
+      :error="finish.error"
+      :correct="finish.correct"
+      :total="finish.total"
+      :stars="finish.stars"
+      @retry="finishRound"
       @replay="replay"
     />
   </main>
@@ -65,6 +69,8 @@ type PlayQuestion = {
   explanation: string;
 };
 
+type SubmittedAnswer = { questionId: string; answer: boolean };
+
 const route = useRoute();
 const id = computed(() => routeParam(route.params.id));
 const { session, refresh } = useSession();
@@ -73,21 +79,29 @@ const { enqueue: enqueueRewards } = useRewardToasts();
 
 await refresh();
 
-const busy = ref(false);
-const index = ref(0);
-const attemptId = ref<string | null>(null);
-const attemptPromise = ref<Promise<string> | null>(null);
-const modalOpen = ref(false);
-const explanation = ref("");
-const submitted = ref<{ questionId: string; answer: boolean }[]>([]);
-const finishOpen = ref(false);
-const finishScoring = ref(false);
-const finishError = ref(false);
-const finishCorrect = ref(0);
-const finishTotal = ref(0);
-const finishStars = ref(0);
+const play = reactive({
+  busy: false,
+  index: 0,
+  attemptId: null as string | null,
+  attemptPromise: null as Promise<string> | null,
+  submitted: [] as SubmittedAnswer[],
+});
 
-const { data: level } = await useAsyncData(`play-${id.value}`, () =>
+const explanation = reactive({
+  open: false,
+  text: "",
+});
+
+const finish = reactive({
+  open: false,
+  scoring: false,
+  error: false,
+  correct: 0,
+  total: 0,
+  stars: 0,
+});
+
+const { data: level } = await useCachedAsyncData(`level-${id.value}`, () =>
   $fetch<{
     id: string;
     title?: string;
@@ -101,7 +115,7 @@ const progressPct = computed(() => {
   if (!total) {
     return 0;
   }
-  return Math.round(((index.value + 1) / total) * 100);
+  return Math.round(((play.index + 1) / total) * 100);
 });
 
 usePageSeo(() => ({
@@ -119,88 +133,90 @@ function startAttempt(): Promise<string> | null {
   if (!session.value?.user) {
     return null;
   }
-  attemptPromise.value = $fetch<{ attemptId: string }>(`/api/levels/${id.value}/start`, {
+  play.attemptPromise = $fetch<{ attemptId: string }>(`/api/levels/${id.value}/start`, {
     method: "POST",
   }).then((res) => {
-    attemptId.value = res.attemptId;
+    play.attemptId = res.attemptId;
     return res.attemptId;
   });
-  return attemptPromise.value;
+  return play.attemptPromise;
 }
 
 async function ensureAttemptId(): Promise<string> {
-  if (attemptId.value) {
-    return attemptId.value;
+  if (play.attemptId) {
+    return play.attemptId;
   }
-  if (attemptPromise.value) {
-    return attemptPromise.value;
+  if (play.attemptPromise) {
+    return play.attemptPromise;
   }
   const p = startAttempt();
-  if (!p) throw new Error("Not authenticated");
+  if (!p) {
+    throw new Error("Not authenticated");
+  }
   return p;
 }
 
 function onAnswer(answer: boolean) {
-  if (busy.value || !questions.value.length) {
+  if (play.busy || !questions.value.length) {
     return;
   }
-  const q = questions.value[index.value];
+  const q = questions.value[play.index];
   if (!q) {
     return;
   }
-  busy.value = true;
+  play.busy = true;
 
-  submitted.value.push({ questionId: q.id, answer });
+  play.submitted.push({ questionId: q.id, answer });
   const correct = answer === q.isTrue;
 
   if (correct) {
     void advance();
   } else {
-    explanation.value = q.explanation?.trim() || "Неверно";
-    modalOpen.value = true;
-    busy.value = false;
+    explanation.text = q.explanation?.trim() || "Неверно";
+    explanation.open = true;
+    play.busy = false;
   }
 }
 
 async function afterExplanation() {
-  modalOpen.value = false;
+  explanation.open = false;
   await advance();
 }
 
 async function advance() {
-  const nextIndex = index.value + 1;
+  const nextIndex = play.index + 1;
   if (nextIndex >= questions.value.length) {
-    await finish();
+    await finishRound();
     return;
   }
-  index.value = nextIndex;
-  busy.value = false;
+  play.index = nextIndex;
+  play.busy = false;
 }
 
 function replay() {
-  finishOpen.value = false;
-  finishScoring.value = false;
-  finishError.value = false;
-  index.value = 0;
-  submitted.value = [];
-  attemptId.value = null;
-  attemptPromise.value = null;
-  busy.value = false;
+  finish.open = false;
+  finish.scoring = false;
+  finish.error = false;
+  play.index = 0;
+  play.submitted = [];
+  play.attemptId = null;
+  play.attemptPromise = null;
+  play.busy = false;
   void startAttempt();
 }
 
 function applyGrade(g: { correct: number; total: number; stars: number }) {
-  finishCorrect.value = g.correct;
-  finishTotal.value = g.total;
-  finishStars.value = g.stars;
-  finishScoring.value = false;
+  finish.correct = g.correct;
+  finish.total = g.total;
+  finish.stars = g.stars;
+  finish.scoring = false;
 }
 
-async function finish() {
-  finishOpen.value = true;
-  finishScoring.value = true;
-  finishError.value = false;
-  busy.value = true;
+async function finishRound() {
+  finish.open = true;
+  finish.scoring = true;
+  finish.error = false;
+  play.busy = true;
 
   try {
     if (session.value?.user) {
@@ -212,7 +228,7 @@ async function finish() {
         unlockedAchievements?: UnlockedAchievementPayload[];
       }>("/api/progress/level", {
         method: "POST",
-        body: { attemptId: aid, answers: submitted.value },
+        body: { attemptId: aid, answers: play.submitted },
       });
       applyGrade(finishRes);
       if (finishRes.unlockedAchievements?.length) {
@@ -223,7 +239,7 @@ async function finish() {
 
     const graded = await $fetch<{ correct: number; total: number; stars: number }>(
       `/api/levels/${id.value}/finish`,
-      { method: "POST", body: { answers: submitted.value } },
+      { method: "POST", body: { answers: play.submitted } },
     );
     await guest.upsert({
       levelId: id.value,
@@ -236,9 +252,9 @@ async function finish() {
     applyGrade(graded);
   } catch (e) {
     console.error(e);
-    finishScoring.value = false;
-    finishError.value = true;
-    busy.value = false;
+    finish.scoring = false;
+    finish.error = true;
+    play.busy = false;
   }
 }
 </script>

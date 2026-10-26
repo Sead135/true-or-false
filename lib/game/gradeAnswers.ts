@@ -1,9 +1,9 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { createError } from "h3";
 import { z } from "zod";
-import { computeStars } from "../../app/utils/stars";
 import type { Db } from "../db";
 import { questions } from "../db/schema";
+import { computeStars } from "./stars";
 
 export const answersBodySchema = z
   .array(
@@ -31,19 +31,28 @@ export async function gradeAnswers(
     throw createError({ statusCode: 400, message: "Duplicate answers" });
   }
 
-  const qs = await db
-    .select({ id: questions.id, isTrue: questions.isTrue })
+  const levelQs = await db
+    .select({ id: questions.id, isTrue: questions.isTrue, hidden: questions.hidden })
     .from(questions)
-    .where(and(eq(questions.levelId, levelId), inArray(questions.id, ids)));
+    .where(eq(questions.levelId, levelId));
 
-  if (qs.length !== ids.length) {
-    throw createError({ statusCode: 400, message: "Unknown questions" });
+  const byId = new Map(levelQs.map((q) => [q.id, q]));
+  for (const id of ids) {
+    if (!byId.has(id)) {
+      throw createError({ statusCode: 400, message: "Unknown questions" });
+    }
   }
 
-  const truth = new Map(qs.map((q) => [q.id, q.isTrue]));
+  const submittedSet = new Set(ids);
+  for (const q of levelQs) {
+    if (!q.hidden && !submittedSet.has(q.id)) {
+      throw createError({ statusCode: 400, message: "Incomplete answers" });
+    }
+  }
+
   const graded = submitted.map((a) => {
-    const isTrue = truth.get(a.questionId)!;
-    return { ...a, isTrue, correct: a.answer === isTrue };
+    const q = byId.get(a.questionId)!;
+    return { ...a, isTrue: q.isTrue, correct: a.answer === q.isTrue };
   });
   const correct = graded.filter((g) => g.correct).length;
   const total = graded.length;

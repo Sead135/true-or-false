@@ -1,6 +1,6 @@
 <template>
   <main class="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-5 py-12">
-    <p v-if="pending" class="muted" role="status">Загрузка…</p>
+    <p v-if="pending && !level" class="muted" role="status">Загрузка…</p>
     <article v-else-if="level" class="panel p-8 sm:p-10">
       <p class="kicker">Уровень {{ level.order }}</p>
       <h1 class="headline mt-3 text-3xl sm:text-4xl">{{ level.title }}</h1>
@@ -25,7 +25,7 @@ import { ArrowLeft, Play } from "lucide-vue-next";
 const route = useRoute();
 const id = computed(() => routeParam(route.params.id));
 
-const { data: level, pending } = await useAsyncData(`level-${id.value}`, () =>
+const { data: level, pending } = await useCachedAsyncData(`level-${id.value}`, () =>
   $fetch<{
     id: string;
     title: string;

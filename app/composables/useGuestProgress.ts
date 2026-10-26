@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
-import type { ProgressRow } from "../utils/mergeProgress";
+import type { ProgressRow } from "../../lib/game/mergeProgress";
 
 interface ProgressDB extends DBSchema {
   levels: {
@@ -37,7 +37,8 @@ export function useGuestProgress() {
       await db.put(STORE, row);
       return;
     }
-    if (row.stars === existing.stars && row.bestCorrect > existing.bestCorrect) {
+    const betterCorrect = row.stars === existing.stars && row.bestCorrect > existing.bestCorrect;
+    if (betterCorrect) {
       await db.put(STORE, row);
     }
   }
@@ -46,7 +47,9 @@ export function useGuestProgress() {
     const db = await getDb();
     const tx = db.transaction(STORE, "readwrite");
     await tx.store.clear();
-    for (const row of rows) await tx.store.put(row);
+    for (const row of rows) {
+      await tx.store.put(row);
+    }
     await tx.done;
   }
 

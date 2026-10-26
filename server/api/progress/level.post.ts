@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { applyRoundRewards } from "../../../lib/achievements/apply";
 import { answersBodySchema, gradeAnswers } from "../../../lib/game/gradeAnswers";
-import { computeStars } from "../../../app/utils/stars";
+import { computeStars } from "../../../lib/game/stars";
 import { levelAttemptAnswers, levelAttempts, userProgress } from "../../../lib/db/schema";
 import { getDb } from "../../utils/db";
 import { requireUser } from "../../utils/requireUser";

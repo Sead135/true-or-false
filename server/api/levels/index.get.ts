@@ -1,6 +1,6 @@
 import { asc, eq, inArray } from "drizzle-orm";
 import { fromNodeHeaders } from "better-auth/node";
-import { isLevelUnlocked } from "../../../app/utils/unlock";
+import { isLevelUnlocked } from "../../../lib/game/unlock";
 import { levels, userProgress } from "../../../lib/db/schema";
 import { getAuth } from "../../utils/auth";
 import { getDb } from "../../utils/db";

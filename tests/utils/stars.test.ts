@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { computeStars } from "../../app/utils/stars";
+import { computeStars } from "../../lib/game/stars";
 
 describe("computeStars", () => {
   test("0 when below 50%", () => {

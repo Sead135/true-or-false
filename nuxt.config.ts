@@ -1,5 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-import { resolveAppUrl } from "./lib/appUrl"
+import { resolveAppUrl } from "./lib/appUrl";
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",

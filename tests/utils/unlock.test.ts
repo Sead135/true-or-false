@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { isLevelUnlocked } from "../../app/utils/unlock";
+import { isLevelUnlocked } from "../../lib/game/unlock";
 
 describe("isLevelUnlocked", () => {
   test("order 1 always unlocked", () => {

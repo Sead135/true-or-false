@@ -1,5 +1,5 @@
 import { createAuthClient } from "better-auth/vue";
-import type { ProgressRow } from "../utils/mergeProgress";
+import type { ProgressRow } from "../../lib/game/mergeProgress";
 
 type AuthClient = ReturnType<typeof createAuthClient>;
 export type AuthSession = NonNullable<Awaited<ReturnType<AuthClient["getSession"]>>["data"]>;
