@@ -67,45 +67,51 @@ type ApiLevel = {
 
 const { session, refresh } = useSession();
 const guest = useGuestProgress();
-await refresh();
+await refresh({ force: import.meta.client && !session.value?.user });
 
-const { data, error } = await useCachedAsyncData(
+const {
+  data,
+  error,
+  refresh: refreshLevels,
+} = await useCachedAsyncData(
   () => `levels-${session.value?.user?.id || "guest"}`,
   () => $fetch<ApiLevel[]>("/api/levels"),
   { watch: [() => session.value?.user?.id] },
 );
 
 const guestProgress = ref<ProgressRow[]>([]);
-const progressReady = ref(false);
+const progressReady = ref(!!session.value?.user);
 
-if (session.value?.user) {
-  progressReady.value = true;
-} else if (import.meta.client) {
-  guestProgress.value = await guest.list();
-  progressReady.value = true;
-} else {
-  onMounted(async () => {
+if (!session.value?.user) {
+  if (import.meta.client) {
     guestProgress.value = await guest.list();
     progressReady.value = true;
-  });
+  } else {
+    onMounted(async () => {
+      guestProgress.value = await guest.list();
+      progressReady.value = true;
+    });
+  }
 }
 
-const authDataReady = computed(() => {
-  if (!session.value?.user) {
-    return true;
-  }
-  const levels = data.value;
-  if (!levels) {
-    return false;
-  }
-  if (!levels.length) {
-    return true;
-  }
-  return "stars" in levels[0]! || "unlocked" in levels[0]!;
-});
+const listReady = computed(() => progressReady.value && Array.isArray(data.value));
 
-const listReady = computed(
-  () => progressReady.value && Array.isArray(data.value) && authDataReady.value,
+watch(
+  [session, data],
+  () => {
+    if (!import.meta.client || !session.value?.user) {
+      return;
+    }
+    const levels = data.value;
+    if (!levels?.length) {
+      return;
+    }
+    if ("stars" in levels[0]! || "unlocked" in levels[0]!) {
+      return;
+    }
+    void refreshLevels();
+  },
+  { immediate: true },
 );
 
 const displayLevels = computed(() => {

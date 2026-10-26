@@ -18,6 +18,6 @@ export default defineNuxtPlugin(() => {
       initial = false;
       return;
     }
-    window.ym?.(YM_ID, 'hit', to.fullPath);
+    window.ym?.(YM_ID, "hit", to.fullPath);
   });
 });
