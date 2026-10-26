@@ -135,13 +135,15 @@
         <Transition name="sheet">
           <div
             v-if="settingsOpen"
-            class="sheet-scrim fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center sm:p-5"
+            class="sheet-scrim fixed inset-0 z-50 flex items-stretch justify-center sm:items-center sm:p-5"
             role="dialog"
             aria-modal="true"
             aria-labelledby="settings-title"
             @click.self="settingsOpen = false"
           >
-            <div class="sheet-panel w-full max-w-md p-6 sm:p-7">
+            <div
+              class="sheet-panel h-full w-full overflow-y-auto overscroll-contain p-6 sm:h-auto sm:max-h-[calc(100dvh-2.5rem)] sm:max-w-md sm:p-7"
+            >
               <div class="flex items-center justify-between gap-3">
                 <h2 id="settings-title" class="headline text-xl">Настройки</h2>
                 <button
@@ -210,6 +212,69 @@
                   {{ passLoading ? "Меняю…" : "Обновить пароль" }}
                 </button>
               </form>
+
+              <div class="my-7 h-px" style="background: var(--surface-border)" />
+
+              <div class="flex flex-col gap-3">
+                <h3 class="headline text-lg">Удалить аккаунт</h3>
+                <p class="muted text-sm leading-relaxed">
+                  Прогресс, достижения и сессии удалятся без возможности восстановления.
+                </p>
+                <button type="button" class="btn btn-danger-soft w-full" @click="openDeleteConfirm">
+                  Удалить аккаунт
+                </button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
+
+      <Teleport to="body">
+        <Transition name="sheet">
+          <div
+            v-if="deleteConfirmOpen"
+            class="sheet-scrim fixed inset-0 z-[60] flex items-stretch justify-center sm:items-center sm:p-5"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-title"
+            @click.self="closeDeleteConfirm"
+          >
+            <div class="sheet-panel h-full w-full overflow-y-auto overscroll-contain p-6 sm:h-auto sm:max-w-sm sm:p-7">
+              <div class="flex items-center justify-between gap-3">
+                <h2 id="delete-title" class="headline text-xl">Точно удалить?</h2>
+                <button
+                  type="button"
+                  class="icon-btn"
+                  aria-label="Закрыть"
+                  @click="closeDeleteConfirm"
+                >
+                  <AppIcon :icon="X" size="sm" :animate="false" />
+                </button>
+              </div>
+              <p class="muted mt-3 text-sm leading-relaxed">
+                Это нельзя отменить. Введи пароль, чтобы подтвердить.
+              </p>
+              <form class="mt-5 flex flex-col gap-4" @submit.prevent="deleteAccount">
+                <label class="block text-left text-sm font-medium">
+                  Пароль
+                  <input
+                    v-model="deletePassword"
+                    type="password"
+                    required
+                    minlength="8"
+                    autocomplete="current-password"
+                    class="field mt-1.5"
+                  />
+                </label>
+                <p v-if="deleteMsg" class="text-sm text-[var(--danger)]">{{ deleteMsg }}</p>
+                <button
+                  type="submit"
+                  class="btn btn-danger-soft w-full"
+                  :disabled="deleteLoading || !deletePassword"
+                >
+                  {{ deleteLoading ? "Удаляю…" : "Удалить" }}
+                </button>
+              </form>
             </div>
           </div>
         </Transition>
@@ -230,13 +295,15 @@ usePageSeo({
 
 const { session, client, refresh } = useSession();
 const settingsOpen = ref(false);
+const deleteConfirmOpen = ref(false);
 
-watch(settingsOpen, (open) => {
-  if (!import.meta.client) {
-    return;
-  }
-  document.documentElement.style.overflow = open ? "hidden" : "";
-});
+watch(
+  [settingsOpen, deleteConfirmOpen],
+  ([settings, del]) => {
+    if (!import.meta.client) return;
+    document.documentElement.style.overflow = settings || del ? "hidden" : "";
+  },
+);
 
 onUnmounted(() => {
   if (import.meta.client) {
@@ -299,6 +366,10 @@ const newPassword = ref("");
 const passLoading = ref(false);
 const passMsg = ref("");
 const passErr = ref(false);
+
+const deletePassword = ref("");
+const deleteLoading = ref(false);
+const deleteMsg = ref("");
 
 const achFilter = ref<"all" | "unlocked" | "locked">("all");
 const filters = [
@@ -410,6 +481,39 @@ async function savePassword() {
     passMsg.value = e instanceof Error ? e.message : "Ошибка смены пароля";
   } finally {
     passLoading.value = false;
+  }
+}
+
+function openDeleteConfirm() {
+  deletePassword.value = "";
+  deleteMsg.value = "";
+  deleteConfirmOpen.value = true;
+}
+
+function closeDeleteConfirm() {
+  if (deleteLoading.value) return;
+  deleteConfirmOpen.value = false;
+  deletePassword.value = "";
+  deleteMsg.value = "";
+}
+
+async function deleteAccount() {
+  if (!deletePassword.value) return;
+
+  deleteLoading.value = true;
+  deleteMsg.value = "";
+  try {
+    const res = await client.deleteUser({ password: deletePassword.value });
+    if (res.error) throw new Error(res.error.message || "Не удалось удалить аккаунт");
+    session.value = null;
+    deleteConfirmOpen.value = false;
+    settingsOpen.value = false;
+    await refresh({ force: true });
+    await navigateTo("/");
+  } catch (e: unknown) {
+    deleteMsg.value = e instanceof Error ? e.message : "Ошибка удаления";
+  } finally {
+    deleteLoading.value = false;
   }
 }
 </script>

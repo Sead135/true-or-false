@@ -3,13 +3,15 @@
     <Transition name="sheet">
       <div
         v-if="open"
-        class="sheet-scrim fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center sm:p-5"
+        class="sheet-scrim fixed inset-0 z-50 flex items-stretch justify-center sm:items-center sm:p-5"
         role="dialog"
         aria-modal="true"
         :aria-labelledby="scoring ? 'finish-scoring-title' : 'finish-result-title'"
         :aria-busy="scoring"
       >
-        <div class="sheet-panel w-full max-w-[22rem] p-6 text-center sm:p-7">
+        <div
+          class="sheet-panel flex h-full w-full flex-col justify-center overflow-y-auto overscroll-contain p-6 text-center sm:h-auto sm:max-w-[22rem] sm:p-7"
+        >
           <template v-if="scoring">
             <div class="finish-spinner mx-auto" aria-hidden="true">
               <AppIcon :icon="LoaderCircle" size="lg" class="animate-spin" :animate="false" />

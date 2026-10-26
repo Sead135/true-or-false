@@ -199,6 +199,7 @@ body {
   font-weight: 700;
   letter-spacing: -0.015em;
   border: 1px solid transparent;
+  cursor: pointer;
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease,
@@ -396,6 +397,29 @@ html.dark .sheet-scrim {
   background: var(--surface);
   color: var(--ink);
   box-shadow: var(--shadow-lg);
+}
+
+@media (max-width: 639px) {
+  .sheet-scrim {
+    align-items: stretch;
+    padding: 0;
+  }
+
+  .sheet-panel {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    height: 100%;
+    min-height: 100%;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+  }
+
+  .sheet-enter-from .sheet-panel,
+  .sheet-leave-to .sheet-panel {
+    transform: translateY(12px);
+  }
 }
 
 .sheet-enter-active,

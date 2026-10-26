@@ -3,12 +3,14 @@
     <Transition name="sheet">
       <div
         v-if="open"
-        class="sheet-scrim fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center sm:p-5"
+        class="sheet-scrim fixed inset-0 z-50 flex items-stretch justify-center sm:items-center sm:p-5"
         role="dialog"
         aria-modal="true"
         aria-labelledby="wrong-title"
       >
-        <div class="sheet-panel w-full max-w-[22rem] p-6 text-center sm:p-7">
+        <div
+          class="sheet-panel flex h-full w-full flex-col justify-center overflow-y-auto overscroll-contain p-6 text-center sm:h-auto sm:max-w-[22rem] sm:p-7"
+        >
           <div class="error-icon mx-auto icon-draw" aria-hidden="true">
             <AppIcon :icon="XCircle" size="lg" :animate="false" :draw="false" />
           </div>

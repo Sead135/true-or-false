@@ -1,6 +1,8 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { eq } from 'drizzle-orm';
 import { createDb, normalizeDatabaseUrl, schema } from './db';
+import { levelAttempts, userAchievements, userProgress, userStats } from './db/schema';
 
 function normalizeBaseURL(url: string) {
   return url
@@ -88,6 +90,15 @@ export function createAuth(env: {
           defaultValue: 'user',
           required: false,
           input: false
+        }
+      },
+      deleteUser: {
+        enabled: true,
+        async afterDelete(user) {
+          await db.delete(levelAttempts).where(eq(levelAttempts.userId, user.id));
+          await db.delete(userProgress).where(eq(userProgress.userId, user.id));
+          await db.delete(userStats).where(eq(userStats.userId, user.id));
+          await db.delete(userAchievements).where(eq(userAchievements.userId, user.id));
         }
       }
     },
