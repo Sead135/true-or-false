@@ -334,6 +334,8 @@ watch(
   padding: 0.85rem 0.75rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
   transition:
     transform 0.15s ease,
     background 0.15s ease,
@@ -346,11 +348,6 @@ watch(
   cursor: not-allowed;
 }
 
-.answer-pad:focus-visible {
-  outline: none;
-  box-shadow: var(--focus);
-}
-
 .answer-pad:active:not(:disabled) {
   transform: scale(0.97);
 }
@@ -361,18 +358,24 @@ watch(
   border-color: color-mix(in srgb, var(--false) 28%, transparent);
 }
 
-.answer-pad--false:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--false-soft) 70%, var(--false));
-}
-
 .answer-pad--true {
   color: var(--true-ink);
   background: var(--true-soft);
   border-color: color-mix(in srgb, var(--true) 28%, transparent);
 }
 
-.answer-pad--true:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--true-soft) 70%, var(--true));
+@media (hover: hover) and (pointer: fine) {
+  .answer-pad:focus-visible {
+    box-shadow: var(--focus);
+  }
+
+  .answer-pad--false:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--false-soft) 70%, var(--false));
+  }
+
+  .answer-pad--true:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--true-soft) 70%, var(--true));
+  }
 }
 
 .answer-pad__icon {

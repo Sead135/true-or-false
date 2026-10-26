@@ -9,7 +9,7 @@
 - **Neon** Postgres + **Drizzle**
 - **Better Auth** (email/password, роли `owner` | `admin` | `user`)
 - **oxlint** + **oxfmt** (как в React-проектах; шаблоны Vue oxlint пока не линтит)
-- Деплой: **Vercel** (`nitro.preset: 'vercel'`)
+- Деплой: Node-хостинг (Nitro default; напр. Layero)
 
 ## Быстрый старт
 
@@ -38,7 +38,8 @@ bun run dev
 | `DATABASE_URL`                   | Postgres (Neon)                     |
 | `BETTER_AUTH_SECRET`             | Секрет сессий Better Auth           |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Первый админ (`seed:admin`)         |
-| `NUXT_PUBLIC_APP_URL`            | Публичный URL приложения (для auth) |
+| `NUXT_PUBLIC_APP_URL`            | URL сайта как в браузере (без `/` в конце) |
+| `BETTER_AUTH_TRUSTED_ORIGINS`    | Опционально: доп. origins через запятую |
 
 ## Скрипты
 
@@ -82,4 +83,7 @@ tests/        тесты
 
 ## Деплой
 
-Сборка под Vercel. В проекте задай те же env, что в `.env.local`, и `NUXT_PUBLIC_APP_URL` = прод-домен.
+`bun run build`, те же env что в `.env.local`.
+
+**Auth на проде:** `NUXT_PUBLIC_APP_URL` = канонический URL (`https://твой-домен`).  
+Доп. origins (preview и т.п.) — в `BETTER_AUTH_TRUSTED_ORIGINS` через запятую.

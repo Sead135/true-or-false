@@ -1,4 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { resolveAppUrl } from "./lib/appUrl"
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   modules: ["@nuxt/ui", "@vueuse/nuxt", "oxc-nuxt"],
@@ -55,10 +57,7 @@ export default defineNuxtConfig({
     adminEmail: process.env.ADMIN_EMAIL || "",
     adminPassword: process.env.ADMIN_PASSWORD || "",
     public: {
-      appUrl: process.env.NUXT_PUBLIC_APP_URL || "http://localhost:3000",
+      appUrl: resolveAppUrl(),
     },
-  },
-  nitro: {
-    preset: "vercel",
   },
 });

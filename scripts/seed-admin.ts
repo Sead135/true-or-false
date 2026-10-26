@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { resolveAppUrl } from "../lib/appUrl";
 import { createAuth } from "../lib/auth";
 import { createDb } from "../lib/db";
 import { user } from "../lib/db/auth-schema";
@@ -7,7 +8,7 @@ const databaseUrl = process.env.DATABASE_URL;
 const secret = process.env.BETTER_AUTH_SECRET;
 const adminEmail = process.env.ADMIN_EMAIL;
 const adminPassword = process.env.ADMIN_PASSWORD;
-const baseURL = process.env.NUXT_PUBLIC_APP_URL || "http://localhost:3000";
+const baseURL = resolveAppUrl();
 
 if (!databaseUrl || !secret || !adminEmail || !adminPassword) {
   throw new Error("Missing DATABASE_URL / BETTER_AUTH_SECRET / ADMIN_EMAIL / ADMIN_PASSWORD");
