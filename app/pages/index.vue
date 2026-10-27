@@ -28,7 +28,7 @@
           <AppIcon :icon="Play" size="sm" />
           Играть
         </NuxtLink>
-        <div v-if="!pending && !session?.user" class="grid grid-cols-2 gap-3">
+        <div v-if="!session?.user" class="grid grid-cols-2 gap-3">
           <NuxtLink to="/login" class="btn btn-ghost">
             <AppIcon :icon="LogIn" size="sm" />
             Войти
@@ -49,6 +49,6 @@ usePageSeo({
   path: "/",
 });
 
-const { session, pending, refresh } = useSession();
+const { session, refresh } = useSession();
 await refresh();
 </script>

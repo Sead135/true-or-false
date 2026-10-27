@@ -2,7 +2,7 @@
   <NuxtLink
     v-if="unlocked"
     :to="`/levels/${id}`"
-    class="level-row panel panel-sm group relative block px-5 py-4 transition duration-200 hover:-translate-y-px hover:shadow-[var(--shadow-lg)]"
+    class="level-row panel panel-sm group relative block px-5 py-4 text-inherit no-underline transition duration-200 hover:-translate-y-px hover:shadow-[var(--shadow-lg)]"
   >
     <div class="flex items-center gap-4">
       <span class="level-num" aria-hidden="true">{{ String(order).padStart(2, "0") }}</span>
@@ -63,6 +63,11 @@ defineProps<{
 .lock-mark {
   display: inline-flex;
   color: var(--muted);
+}
+
+.level-row {
+  color: inherit;
+  text-decoration: none;
 }
 
 .level-row:focus-visible {

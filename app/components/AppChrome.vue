@@ -2,8 +2,7 @@
   <div v-if="hasChrome" class="flex items-center gap-2">
     <ThemeToggle v-if="showTheme" />
     <template v-if="showAvatar">
-      <span v-if="pending" class="chrome-slot" aria-hidden="true" />
-      <UserMenu v-else-if="session?.user" />
+      <UserMenu v-if="session?.user" />
       <NuxtLink
         v-else-if="showAuthLink"
         to="/login"
@@ -11,6 +10,7 @@
       >
         Войти
       </NuxtLink>
+      <span v-else-if="pending" class="chrome-slot" aria-hidden="true" />
     </template>
     <slot />
   </div>

@@ -28,7 +28,10 @@ export function useSession() {
       pending.value = false;
       return;
     }
-    pending.value = true;
+    const blockUi = !loaded.value;
+    if (blockUi) {
+      pending.value = true;
+    }
     try {
       if (import.meta.server) {
         const requestFetch = useRequestFetch();

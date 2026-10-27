@@ -96,9 +96,7 @@ const props = defineProps<{
 
 defineEmits<{ retry: []; replay: [] }>();
 
-const showNext = computed(
-  () => props.stars >= 1 && !!props.nextLevelId,
-);
+const showNext = computed(() => props.stars >= 1 && !!props.nextLevelId);
 
 const accuracy = computed(() =>
   props.total > 0 ? Math.round((props.correct / props.total) * 100) : 0,
